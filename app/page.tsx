@@ -137,6 +137,13 @@ export default function Home() {
         const parsedQuestions = await parseExcelFile(file);
         const questions = convertParsedQuestions(parsedQuestions);
 
+        // Validate that file contains questions
+        if (questions.length === 0) {
+          throw new Error(
+            `File "${file.name}" contains no valid questions. Please verify the column headers match the expected format (e.g., 'question_id', 'Question_ID', or 'Question ID').`
+          );
+        }
+
         newFiles.push({
           id: `${Date.now()}-${i}`,
           file,
@@ -196,6 +203,18 @@ export default function Home() {
 
     if (files.length === 0) {
       setError("Please upload at least one file");
+      return;
+    }
+
+    // Validate that files contain questions
+    const totalQuestions = files.reduce(
+      (sum, file) => sum + file.questionCount,
+      0
+    );
+    if (totalQuestions === 0) {
+      setError(
+        "Cannot upload: No questions found in any uploaded files. Please check your Excel file format and ensure question_id/reference_id column exists with valid data."
+      );
       return;
     }
 
