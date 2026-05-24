@@ -112,6 +112,13 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
             "reference_id",
             "question id",
             "reference id",
+            "questionid",
+            "referenceid",
+            "id",
+            "q_id",
+            "qid",
+            "ref_id",
+            "refid",
           ]);
 
           // Skip empty rows
@@ -123,17 +130,40 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
           questions.push({
             reference_id: String(questionId).trim(),
             tag: String(
-              getValue(row, "tag", ["sat_tag", "sat tag", "category"]) || ""
+              getValue(row, "tag", [
+                "sat_tag",
+                "sat tag",
+                "category",
+                "tags",
+                "subject",
+                "topic",
+                "type",
+                "sat tag",
+                "cattag",
+              ]) || ""
             ).trim(),
-            difficulty: String(getValue(row, "difficulty") || "medium")
+            difficulty: String(
+              getValue(row, "difficulty", [
+                "level",
+                "diff",
+                "difficulty level",
+                "question difficulty",
+              ]) || "medium"
+            )
               .toLowerCase()
               .trim()
               .replace("hard", "intense"),
             instructions: convertFracToDisplayFrac(
               trimPreserveLinebreaks(
                 String(
-                  getValue(row, "instructions", ["instruction", "passage"]) ||
-                    ""
+                  getValue(row, "instructions", [
+                    "instruction",
+                    "passage",
+                    "instruction text",
+                    "directions",
+                    "prompt",
+                    "context",
+                  ]) || ""
                 )
               )
             ),
@@ -143,6 +173,11 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                   getValue(row, "question_text", [
                     "question",
                     "question text",
+                    "questiontext",
+                    "q_text",
+                    "qtext",
+                    "query",
+                    "problem",
                   ]) || ""
                 )
               )
@@ -156,6 +191,12 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                     "answer a",
                     "option a",
                     "option 1",
+                    "choice_a",
+                    "choice a",
+                    "choice 1",
+                    "a",
+                    "ans_a",
+                    "ans a",
                   ]) || ""
                 )
               )
@@ -169,6 +210,12 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                     "answer b",
                     "option b",
                     "option 2",
+                    "choice_b",
+                    "choice b",
+                    "choice 2",
+                    "b",
+                    "ans_b",
+                    "ans b",
                   ]) || ""
                 )
               )
@@ -182,6 +229,12 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                     "answer c",
                     "option c",
                     "option 3",
+                    "choice_c",
+                    "choice c",
+                    "choice 3",
+                    "c",
+                    "ans_c",
+                    "ans c",
                   ]) || ""
                 )
               )
@@ -195,18 +248,44 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                     "answer d",
                     "option d",
                     "option 4",
+                    "choice_d",
+                    "choice d",
+                    "choice 4",
+                    "d",
+                    "ans_d",
+                    "ans d",
                   ]) || ""
                 )
               )
             ),
             correct_answer: String(
-              getValue(row, "correct_answer", ["correct answer"]) || ""
+              getValue(row, "correct_answer", [
+                "correct answer",
+                "correctanswer",
+                "answer",
+                "correct",
+                "right_answer",
+                "right answer",
+                "key",
+                "answer_key",
+                "answer key",
+              ]) || ""
             )
               .trim()
               .toUpperCase(),
             explanation: convertFracToDisplayFrac(
               trimPreserveLinebreaks(
-                String(getValue(row, "explanation", ["solution"]) || "")
+                String(
+                  getValue(row, "explanation", [
+                    "solution",
+                    "explanation text",
+                    "rationale",
+                    "reasoning",
+                    "justification",
+                    "answer_explanation",
+                    "answer explanation",
+                  ]) || ""
+                )
               )
             ),
           });
