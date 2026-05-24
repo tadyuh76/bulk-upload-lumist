@@ -13,13 +13,17 @@ export interface UploadProgress {
   message: string;
 }
 
+function getDatabaseClient(examMode: ExamMode) {
+  return examMode === "sat" ? supabase : supabase.schema(examMode);
+}
+
 export async function uploadQuestions(
   questions: Question[],
   examMode: ExamMode,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<string[]> {
   const questionIds: string[] = [];
-  const db = supabase.schema(examMode);
+  const db = getDatabaseClient(examMode);
 
   for (let i = 0; i < questions.length; i++) {
     onProgress?.({
@@ -60,8 +64,7 @@ export async function createTest(
     message: "Creating test entry...",
   });
 
-  const { data, error } = await supabase
-    .schema(examMode)
+  const { data, error } = await getDatabaseClient(examMode)
     .from("tests")
     .insert(test)
     .select("test_id")
@@ -85,7 +88,7 @@ export async function updateTestSections(
 ): Promise<void> {
   // Update test sections 3 and 4 to enable desmos and mark as math sections
   const mathModules = moduleNumbers.filter((num) => num === 3 || num === 4);
-  const db = supabase.schema(examMode);
+  const db = getDatabaseClient(examMode);
 
   for (const moduleNum of mathModules) {
     const testSectionId = `TESTSECTION${moduleNum}`;
@@ -110,7 +113,7 @@ export async function uploadTestQuestions(
   examMode: ExamMode,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<void> {
-  const db = supabase.schema(examMode);
+  const db = getDatabaseClient(examMode);
 
   for (let i = 0; i < testQuestions.length; i++) {
     onProgress?.({

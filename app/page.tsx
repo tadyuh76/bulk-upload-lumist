@@ -28,6 +28,7 @@ import { CSS } from "@dnd-kit/utilities";
 import MarkdownRenderer from "@/app/components/MarkdownRenderer";
 
 const EXAM_MODES: { value: ExamMode; label: string }[] = [
+  { value: "sat", label: "SAT" },
   { value: "ap", label: "AP" },
   { value: "act", label: "ACT" },
 ];
@@ -102,7 +103,7 @@ function SortableFileItem({
 }
 
 export default function Home() {
-  const [examMode, setExamMode] = useState<ExamMode>("ap");
+  const [examMode, setExamMode] = useState<ExamMode>("sat");
   const [files, setFiles] = useState<FileWithModule[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(true);
@@ -298,7 +299,7 @@ export default function Home() {
                 Upload Mode *
               </label>
               <div
-                className="inline-grid grid-cols-2 rounded-lg border border-gray-300 bg-gray-100 p-1"
+                className="inline-grid grid-cols-3 rounded-lg border border-gray-300 bg-gray-100 p-1"
                 role="group"
                 aria-label="Choose upload mode"
               >

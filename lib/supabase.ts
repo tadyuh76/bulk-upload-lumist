@@ -5,7 +5,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-export type ExamMode = "ap" | "act";
+export type ExamMode = "sat" | "ap" | "act";
 export type QuestionType = "multiple_choice" | "numeric";
 export type DifficultyLevel = "easy" | "medium" | "intense";
 
