@@ -1,5 +1,6 @@
 import {
   supabase,
+  type ExamMode,
   type Question,
   type Test,
   type TestQuestion,
@@ -14,9 +15,11 @@ export interface UploadProgress {
 
 export async function uploadQuestions(
   questions: Question[],
+  examMode: ExamMode,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<string[]> {
   const questionIds: string[] = [];
+  const db = supabase.schema(examMode);
 
   for (let i = 0; i < questions.length; i++) {
     onProgress?.({
@@ -26,7 +29,7 @@ export async function uploadQuestions(
       message: `Uploading question ${i + 1} of ${questions.length}`,
     });
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("questions")
       .insert(questions[i])
       .select("question_id")
@@ -47,6 +50,7 @@ export async function uploadQuestions(
 
 export async function createTest(
   test: Test,
+  examMode: ExamMode,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<string> {
   onProgress?.({
@@ -57,6 +61,7 @@ export async function createTest(
   });
 
   const { data, error } = await supabase
+    .schema(examMode)
     .from("tests")
     .insert(test)
     .select("test_id")
@@ -75,15 +80,17 @@ export async function createTest(
 }
 
 export async function updateTestSections(
-  moduleNumbers: number[]
+  moduleNumbers: number[],
+  examMode: ExamMode
 ): Promise<void> {
   // Update test sections 3 and 4 to enable desmos and mark as math sections
   const mathModules = moduleNumbers.filter((num) => num === 3 || num === 4);
+  const db = supabase.schema(examMode);
 
   for (const moduleNum of mathModules) {
     const testSectionId = `TESTSECTION${moduleNum}`;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("test_sections")
       .update({
         is_desmos_allowed: true,
@@ -100,8 +107,11 @@ export async function updateTestSections(
 
 export async function uploadTestQuestions(
   testQuestions: TestQuestion[],
+  examMode: ExamMode,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<void> {
+  const db = supabase.schema(examMode);
+
   for (let i = 0; i < testQuestions.length; i++) {
     onProgress?.({
       stage: "test_questions",
@@ -110,9 +120,7 @@ export async function uploadTestQuestions(
       message: `Linking question ${i + 1} of ${testQuestions.length}`,
     });
 
-    const { error } = await supabase
-      .from("test_questions")
-      .insert(testQuestions[i]);
+    const { error } = await db.from("test_questions").insert(testQuestions[i]);
 
     if (error) {
       console.error("Error uploading test question:", error);
@@ -130,6 +138,7 @@ export async function uploadBulkData(
   modules: ModuleData[],
   testTitle: string,
   testDescription: string,
+  examMode: ExamMode,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<{ test_id: string; total_questions: number }> {
   try {
@@ -142,7 +151,7 @@ export async function uploadBulkData(
       allQuestions.push(...moduleData.questions);
     }
 
-    const questionIds = await uploadQuestions(allQuestions, onProgress);
+    const questionIds = await uploadQuestions(allQuestions, examMode, onProgress);
 
     // Map question IDs back to their modules
     let currentIndex = 0;
@@ -162,11 +171,11 @@ export async function uploadBulkData(
       is_full_test: modules.length === 4,
     };
 
-    const testId = await createTest(test, onProgress);
+    const testId = await createTest(test, examMode, onProgress);
 
     // Step 2.5: Update test sections for math modules (3 and 4)
     const moduleNumbers = modules.map((m) => m.moduleNumber);
-    await updateTestSections(moduleNumbers);
+    await updateTestSections(moduleNumbers, examMode);
 
     // Step 3: Create test_questions
     const testQuestions: TestQuestion[] = [];
@@ -185,7 +194,7 @@ export async function uploadBulkData(
       }
     }
 
-    await uploadTestQuestions(testQuestions, onProgress);
+    await uploadTestQuestions(testQuestions, examMode, onProgress);
 
     onProgress?.({
       stage: "complete",

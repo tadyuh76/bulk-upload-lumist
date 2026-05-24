@@ -7,7 +7,7 @@ import {
   type ModuleData,
   type UploadProgress,
 } from "@/lib/database";
-import { Question } from "@/lib/supabase";
+import type { ExamMode, Question } from "@/lib/supabase";
 import {
   DndContext,
   closestCenter,
@@ -26,6 +26,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import MarkdownRenderer from "@/app/components/MarkdownRenderer";
+
+const EXAM_MODES: { value: ExamMode; label: string }[] = [
+  { value: "ap", label: "AP" },
+  { value: "act", label: "ACT" },
+];
 
 interface FileWithModule {
   id: string;
@@ -97,6 +102,7 @@ function SortableFileItem({
 }
 
 export default function Home() {
+  const [examMode, setExamMode] = useState<ExamMode>("ap");
   const [files, setFiles] = useState<FileWithModule[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(true);
@@ -110,6 +116,7 @@ export default function Home() {
   const [success, setSuccess] = useState<{
     test_id: string;
     total_questions: number;
+    examMode: ExamMode;
   } | null>(null);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
     null
@@ -195,6 +202,12 @@ export default function Home() {
     setIsPreviewing(!isPreviewing);
   };
 
+  const handleExamModeChange = (mode: ExamMode) => {
+    setExamMode(mode);
+    setError(null);
+    setSuccess(null);
+  };
+
   const handleUpload = async () => {
     if (!testTitle.trim()) {
       setError("Please enter a test title");
@@ -232,10 +245,11 @@ export default function Home() {
         modules,
         testTitle,
         testDescription,
+        examMode,
         (progress) => setUploadProgress(progress)
       );
 
-      setSuccess(result);
+      setSuccess({ ...result, examMode });
       setFiles([]);
       setTestTitle("");
       setTestDescription("");
@@ -268,7 +282,8 @@ export default function Home() {
           {success && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-800 text-sm">
-                Successfully uploaded! Test ID:{" "}
+                Successfully uploaded to {success.examMode.toUpperCase()}!
+                Test ID:{" "}
                 <span className="font-mono font-semibold">
                   {success.test_id}
                 </span>{" "}
@@ -278,6 +293,38 @@ export default function Home() {
           )}
 
           <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Upload Mode *
+              </label>
+              <div
+                className="inline-grid grid-cols-2 rounded-lg border border-gray-300 bg-gray-100 p-1"
+                role="group"
+                aria-label="Choose upload mode"
+              >
+                {EXAM_MODES.map((mode) => {
+                  const isSelected = examMode === mode.value;
+
+                  return (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => handleExamModeChange(mode.value)}
+                      disabled={isUploading}
+                      aria-pressed={isSelected}
+                      className={`min-w-24 px-4 py-2 text-sm font-semibold rounded-md transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-gray-800 hover:bg-white"
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Test Title *
@@ -480,7 +527,9 @@ export default function Home() {
                     disabled={isUploading || !testTitle.trim()}
                     className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition font-medium cursor-pointer text-lg"
                   >
-                    {isUploading ? "Uploading..." : "Upload to Database"}
+                    {isUploading
+                      ? "Uploading..."
+                      : `Upload to ${examMode.toUpperCase()} Database`}
                   </button>
                 </div>
               </div>
