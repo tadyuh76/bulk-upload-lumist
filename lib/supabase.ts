@@ -20,6 +20,7 @@ export interface Question {
   tag: string;
   answer_choices: string[];
   correct_answer: string;
+  in_question_bank?: boolean;
 }
 
 export interface Test {

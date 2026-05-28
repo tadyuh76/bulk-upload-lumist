@@ -35,7 +35,10 @@ export async function uploadQuestions(
 
     const { data, error } = await db
       .from("questions")
-      .insert(questions[i])
+      .insert({
+        ...questions[i],
+        in_question_bank: false,
+      })
       .select("question_id")
       .single();
 
