@@ -113,6 +113,8 @@ export default function Home() {
   );
   const [testTitle, setTestTitle] = useState("");
   const [testDescription, setTestDescription] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
+  const [inQuestionBank, setInQuestionBank] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
     test_id: string;
@@ -247,6 +249,10 @@ export default function Home() {
         testTitle,
         testDescription,
         examMode,
+        {
+          organizationId: organizationId.trim() || undefined,
+          inQuestionBank,
+        },
         (progress) => setUploadProgress(progress)
       );
 
@@ -254,6 +260,8 @@ export default function Home() {
       setFiles([]);
       setTestTitle("");
       setTestDescription("");
+      setOrganizationId("");
+      setInQuestionBank(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -352,6 +360,57 @@ export default function Home() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 disabled={isUploading}
               />
+            </div>
+
+            <div className="grid gap-6 rounded-lg border border-gray-200 bg-gray-50 p-4 md:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="organization-id"
+                  className="block text-sm font-medium text-gray-900 mb-2"
+                >
+                  Organization ID
+                </label>
+                <input
+                  id="organization-id"
+                  type="text"
+                  value={organizationId}
+                  onChange={(e) => setOrganizationId(e.target.value)}
+                  placeholder="e.g., ORGANIZATION1"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  disabled={isUploading}
+                />
+                <p className="mt-1 text-xs text-gray-700">
+                  Optional. Applied to the test and to questions without an
+                  organization_id column value.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="in-question-bank"
+                  className="block text-sm font-medium text-gray-900 mb-2"
+                >
+                  Question bank visibility
+                </label>
+                <select
+                  id="in-question-bank"
+                  value={String(inQuestionBank)}
+                  onChange={(e) =>
+                    setInQuestionBank(e.target.value === "true")
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  disabled={isUploading}
+                >
+                  <option value="false">No — test-only questions</option>
+                  <option value="true">
+                    Yes — include in the question bank
+                  </option>
+                </select>
+                <p className="mt-1 text-xs text-gray-700">
+                  This is the default; an in_question_bank spreadsheet column
+                  can override it for individual questions.
+                </p>
+              </div>
             </div>
 
             <div>
@@ -563,9 +622,42 @@ export default function Home() {
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        Organization ID
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedQuestion.organization_id ||
+                          organizationId.trim() ||
+                          "Not set"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-1">
                         Tag
                       </label>
                       <p className="text-gray-900">{selectedQuestion.tag}</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        Sub-skill
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedQuestion.sub_skill || "Not set"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        Question bank visibility
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedQuestion.in_question_bank === undefined
+                          ? `Uses upload default (${inQuestionBank ? "yes" : "no"})`
+                          : selectedQuestion.in_question_bank
+                          ? "Yes"
+                          : "No"}
+                      </p>
                     </div>
 
                     <div>
@@ -600,6 +692,21 @@ export default function Home() {
                       </label>
                       <div className="text-gray-900">
                         <MarkdownRenderer content={selectedQuestion.question_text} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        Image description
+                      </label>
+                      <div className="text-gray-900">
+                        {selectedQuestion.image_description ? (
+                          <MarkdownRenderer
+                            content={selectedQuestion.image_description}
+                          />
+                        ) : (
+                          "Not set"
+                        )}
                       </div>
                     </div>
 

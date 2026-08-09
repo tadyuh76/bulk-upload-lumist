@@ -13,6 +13,11 @@ export interface UploadProgress {
   message: string;
 }
 
+export interface UploadOptions {
+  organizationId?: string;
+  inQuestionBank: boolean;
+}
+
 function getDatabaseClient(examMode: ExamMode) {
   return examMode === "sat" ? supabase : supabase.schema(examMode);
 }
@@ -35,10 +40,7 @@ export async function uploadQuestions(
 
     const { data, error } = await db
       .from("questions")
-      .insert({
-        ...questions[i],
-        in_question_bank: false,
-      })
+      .insert(questions[i])
       .select("question_id")
       .single();
 
@@ -145,6 +147,7 @@ export async function uploadBulkData(
   testTitle: string,
   testDescription: string,
   examMode: ExamMode,
+  options: UploadOptions,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<{ test_id: string; total_questions: number }> {
   try {
@@ -154,7 +157,28 @@ export async function uploadBulkData(
       [];
 
     for (const moduleData of modules) {
-      allQuestions.push(...moduleData.questions);
+      allQuestions.push(
+        ...moduleData.questions.map((question) => ({
+          ...question,
+          organization_id: question.organization_id ?? options.organizationId,
+          in_question_bank:
+            question.in_question_bank ?? options.inQuestionBank,
+        }))
+      );
+    }
+
+    const organizationIds = [
+      ...new Set(
+        allQuestions
+          .map((question) => question.organization_id)
+          .filter((organizationId): organizationId is string => Boolean(organizationId))
+      ),
+    ];
+
+    if (organizationIds.length > 1) {
+      throw new Error(
+        "All questions in one test must use the same organization ID. Set one Organization ID in the form or align the organization_id values in your spreadsheet."
+      );
     }
 
     const questionIds = await uploadQuestions(allQuestions, examMode, onProgress);
@@ -175,6 +199,7 @@ export async function uploadBulkData(
       title: testTitle,
       description: testDescription,
       is_full_test: modules.length === 4,
+      organization_id: organizationIds[0],
     };
 
     const testId = await createTest(test, examMode, onProgress);

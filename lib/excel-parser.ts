@@ -3,10 +3,14 @@ import type { Question } from "./supabase";
 
 export interface ParsedQuestion {
   reference_id: string;
+  organization_id: string;
+  in_question_bank?: boolean;
   tag: string;
+  sub_skill: string;
   difficulty: string;
   instructions: string;
   question_text: string;
+  image_description: string;
   answer_a: string;
   answer_b: string;
   answer_c: string;
@@ -29,7 +33,7 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
         // Convert to JSON with headers
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {
           defval: "",
-        }) as Record<string, string>[];
+        }) as Record<string, unknown>[];
 
         // Validate that we have data
         if (jsonData.length === 0) {
@@ -81,26 +85,43 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
 
         // Helper function to get value with fallback headers (case-insensitive, space/underscore flexible)
         const getValue = (
-          row: Record<string, string>,
+          row: Record<string, unknown>,
           primary: string,
           fallbacks: string[] = []
-        ): string => {
+        ): unknown => {
           // Create a normalized key map for flexible lookup
-          const normalizedRow: Record<string, string> = {};
+          const normalizedRow: Record<string, unknown> = {};
           Object.keys(row).forEach((key) => {
             normalizedRow[normalizeKey(key)] = row[key];
           });
 
+          const hasValue = (value: unknown) =>
+            value !== undefined && value !== null && String(value).trim() !== "";
+
           // Check primary key (normalized)
-          if (normalizedRow[normalizeKey(primary)])
+          if (hasValue(normalizedRow[normalizeKey(primary)]))
             return normalizedRow[normalizeKey(primary)];
 
           // Check fallback keys (normalized)
           for (const fallback of fallbacks) {
-            if (normalizedRow[normalizeKey(fallback)])
+            if (hasValue(normalizedRow[normalizeKey(fallback)]))
               return normalizedRow[normalizeKey(fallback)];
           }
           return "";
+        };
+
+        const parseOptionalBoolean = (
+          value: unknown,
+          questionId: string
+        ): boolean | undefined => {
+          const normalized = String(value ?? "").trim().toLowerCase();
+          if (!normalized) return undefined;
+          if (["true", "yes", "1"].includes(normalized)) return true;
+          if (["false", "no", "0"].includes(normalized)) return false;
+
+          throw new Error(
+            `Invalid in_question_bank value for "${questionId}". Use true or false.`
+          );
         };
 
         // Parse rows using header names
@@ -129,6 +150,21 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
 
           questions.push({
             reference_id: String(questionId).trim(),
+            organization_id: String(
+              getValue(row, "organization_id", [
+                "organization id",
+                "organization",
+                "org_id",
+                "org id",
+              ]) || ""
+            ).trim(),
+            in_question_bank: parseOptionalBoolean(
+              getValue(row, "in_question_bank", [
+                "in question bank",
+                "question bank",
+              ]),
+              String(questionId).trim()
+            ),
             tag: String(
               getValue(row, "tag", [
                 "sat_tag",
@@ -140,6 +176,12 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                 "type",
                 "sat tag",
                 "cattag",
+              ]) || ""
+            ).trim(),
+            sub_skill: String(
+              getValue(row, "sub_skill", [
+                "sub skill",
+                "subskill",
               ]) || ""
             ).trim(),
             difficulty: String(
@@ -180,6 +222,16 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                     "problem",
                   ]) || ""
                 )
+              )
+            ),
+            image_description: trimPreserveLinebreaks(
+              String(
+                getValue(row, "image_description", [
+                  "image description",
+                  "image alt",
+                  "image alt text",
+                  "alt text",
+                ]) || ""
               )
             ),
             answer_a: convertFracToDisplayFrac(
@@ -345,12 +397,16 @@ export function convertToQuestion(parsed: ParsedQuestion): Question {
 
   return {
     reference_id: parsed.reference_id,
+    organization_id: parsed.organization_id || undefined,
+    in_question_bank: parsed.in_question_bank,
     question_type: isNumeric ? "numeric" : "multiple_choice",
     question_text: parsed.question_text,
     instructions: parsed.instructions,
     explanation: parsed.explanation,
     difficulty: parsed.difficulty as "easy" | "medium" | "intense",
     tag: parsed.tag,
+    sub_skill: parsed.sub_skill || undefined,
+    image_description: parsed.image_description || undefined,
     answer_choices: answerChoices,
     correct_answer: isNumeric
       ? parsed.correct_answer

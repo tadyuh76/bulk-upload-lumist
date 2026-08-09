@@ -77,10 +77,14 @@ Your Excel/CSV files should have the following columns:
 | Answer D | Fourth answer choice |
 | Correct Answer | Letter of correct answer (A, B, C, or D) |
 | Explanation | Explanation text |
+| Organization ID | Optional owning organization for this question |
+| In Question Bank | Optional `true` or `false`; overrides the upload default |
+| Sub Skill | Optional secondary skill classification |
+| Image Description | Optional accessible description of the question image |
 
 ## Usage
 
-1. **Enter Test Details**: Provide a test title and optional description
+1. **Enter Test Details**: Provide a test title, optional description, organization ID, and question-bank default
 2. **Upload Files**: Select 1-4 Excel/CSV files
 3. **Reorder Modules**: Drag files to set their module order (1-4)
 4. **Preview Data**: Click "Preview Data" to review parsed questions
@@ -102,6 +106,8 @@ Excel Files → Parse → Convert Format → Preview
 - Maximum 4 files can be uploaded at once (one per module)
 - Files are automatically parsed and validated
 - Correct answer is converted from letters (A-D) to indices (1-4)
+- `organization_id`, `in_question_bank`, `sub_skill`, and `image_description` are accepted as optional spreadsheet columns (spaces and case differences are supported)
+- A spreadsheet `in_question_bank` value overrides the selected upload default for that question
 - Test sections (TESTSECTION1-4) must exist in your database
 - All uploads are transactional - if any step fails, no data is saved
 
