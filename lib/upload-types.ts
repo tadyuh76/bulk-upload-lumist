@@ -1,10 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
 export type ExamMode = "sat" | "ap" | "act";
 export type QuestionType = "multiple_choice" | "numeric";
 export type DifficultyLevel = "easy" | "medium" | "intense";
@@ -38,18 +31,20 @@ export interface Test {
   organization_id?: string;
 }
 
-export interface TestSection {
-  test_section_id: string;
-  name: string;
-  duration_minutes: number;
-  is_desmos_allowed: boolean;
-  is_math_section?: boolean;
-}
-
 export interface TestQuestion {
   test_question_id?: string;
   question_id: string;
   test_section_id: string;
   test_id: string;
   order_in_test: number;
+}
+
+export interface UploadOptions {
+  organizationId?: string;
+  inQuestionBank: boolean;
+}
+
+export interface ModuleData {
+  moduleNumber: number;
+  questions: Question[];
 }

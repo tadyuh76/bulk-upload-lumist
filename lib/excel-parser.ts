@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import type { Question } from "./supabase";
+import type { Question } from "./upload-types";
 
 export interface ParsedQuestion {
   reference_id: string;

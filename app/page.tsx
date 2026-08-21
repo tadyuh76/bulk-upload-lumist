@@ -7,7 +7,7 @@ import {
   type ModuleData,
   type UploadProgress,
 } from "@/lib/database";
-import type { ExamMode, Question } from "@/lib/supabase";
+import type { ExamMode, Question } from "@/lib/upload-types";
 import {
   DndContext,
   closestCenter,

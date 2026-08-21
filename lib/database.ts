@@ -1,10 +1,8 @@
-import {
-  supabase,
-  type ExamMode,
-  type Question,
-  type Test,
-  type TestQuestion,
-} from "./supabase";
+import type {
+  ExamMode,
+  ModuleData,
+  UploadOptions,
+} from "./upload-types";
 
 export interface UploadProgress {
   stage: "questions" | "test" | "test_questions" | "complete";
@@ -13,134 +11,7 @@ export interface UploadProgress {
   message: string;
 }
 
-export interface UploadOptions {
-  organizationId?: string;
-  inQuestionBank: boolean;
-}
-
-function getDatabaseClient(examMode: ExamMode) {
-  return examMode === "sat" ? supabase : supabase.schema(examMode);
-}
-
-export async function uploadQuestions(
-  questions: Question[],
-  examMode: ExamMode,
-  onProgress?: (progress: UploadProgress) => void
-): Promise<string[]> {
-  const questionIds: string[] = [];
-  const db = getDatabaseClient(examMode);
-
-  for (let i = 0; i < questions.length; i++) {
-    onProgress?.({
-      stage: "questions",
-      current: i + 1,
-      total: questions.length,
-      message: `Uploading question ${i + 1} of ${questions.length}`,
-    });
-
-    const { data, error } = await db
-      .from("questions")
-      .insert(questions[i])
-      .select("question_id")
-      .single();
-
-    if (error) {
-      console.error("Error uploading question:", error);
-      throw new Error(`Failed to upload question ${i + 1}: ${error.message}`);
-    }
-
-    if (data?.question_id) {
-      questionIds.push(data.question_id);
-    }
-  }
-
-  return questionIds;
-}
-
-export async function createTest(
-  test: Test,
-  examMode: ExamMode,
-  onProgress?: (progress: UploadProgress) => void
-): Promise<string> {
-  onProgress?.({
-    stage: "test",
-    current: 1,
-    total: 1,
-    message: "Creating test entry...",
-  });
-
-  const { data, error } = await getDatabaseClient(examMode)
-    .from("tests")
-    .insert(test)
-    .select("test_id")
-    .single();
-
-  if (error) {
-    console.error("Error creating test:", error);
-    throw new Error(`Failed to create test: ${error.message}`);
-  }
-
-  if (!data?.test_id) {
-    throw new Error("Test created but no test_id returned");
-  }
-
-  return data.test_id;
-}
-
-export async function updateTestSections(
-  moduleNumbers: number[],
-  examMode: ExamMode
-): Promise<void> {
-  // Update test sections 3 and 4 to enable desmos and mark as math sections
-  const mathModules = moduleNumbers.filter((num) => num === 3 || num === 4);
-  const db = getDatabaseClient(examMode);
-
-  for (const moduleNum of mathModules) {
-    const testSectionId = `TESTSECTION${moduleNum}`;
-
-    const { error } = await db
-      .from("test_sections")
-      .update({
-        is_desmos_allowed: true,
-        is_math_section: true,
-      })
-      .eq("test_section_id", testSectionId);
-
-    if (error) {
-      console.error(`Error updating test section ${testSectionId}:`, error);
-      // Don't throw error, just log it since this is a supplementary update
-    }
-  }
-}
-
-export async function uploadTestQuestions(
-  testQuestions: TestQuestion[],
-  examMode: ExamMode,
-  onProgress?: (progress: UploadProgress) => void
-): Promise<void> {
-  const db = getDatabaseClient(examMode);
-
-  for (let i = 0; i < testQuestions.length; i++) {
-    onProgress?.({
-      stage: "test_questions",
-      current: i + 1,
-      total: testQuestions.length,
-      message: `Linking question ${i + 1} of ${testQuestions.length}`,
-    });
-
-    const { error } = await db.from("test_questions").insert(testQuestions[i]);
-
-    if (error) {
-      console.error("Error uploading test question:", error);
-      throw new Error(`Failed to link question ${i + 1}: ${error.message}`);
-    }
-  }
-}
-
-export interface ModuleData {
-  moduleNumber: number;
-  questions: Question[];
-}
+export type { ModuleData } from "./upload-types";
 
 export async function uploadBulkData(
   modules: ModuleData[],
@@ -150,96 +21,49 @@ export async function uploadBulkData(
   options: UploadOptions,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<{ test_id: string; total_questions: number }> {
-  try {
-    // Step 1: Upload all questions and collect their IDs
-    const allQuestions: Question[] = [];
-    const moduleQuestionIds: { moduleNumber: number; questionIds: string[] }[] =
-      [];
+  const totalQuestions = modules.reduce(
+    (total, module) => total + module.questions.length,
+    0
+  );
 
-    for (const moduleData of modules) {
-      allQuestions.push(
-        ...moduleData.questions.map((question) => ({
-          ...question,
-          organization_id: question.organization_id ?? options.organizationId,
-          in_question_bank:
-            question.in_question_bank ?? options.inQuestionBank,
-        }))
-      );
-    }
+  onProgress?.({
+    stage: "questions",
+    current: 0,
+    total: totalQuestions,
+    message: "Uploading questions...",
+  });
 
-    const organizationIds = [
-      ...new Set(
-        allQuestions
-          .map((question) => question.organization_id)
-          .filter((organizationId): organizationId is string => Boolean(organizationId))
-      ),
-    ];
+  const response = await fetch("/api/bulk-upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      modules,
+      testTitle,
+      testDescription,
+      examMode,
+      options,
+    }),
+  });
 
-    if (organizationIds.length > 1) {
-      throw new Error(
-        "All questions in one test must use the same organization ID. Set one Organization ID in the form or align the organization_id values in your spreadsheet."
-      );
-    }
+  const payload = (await response.json().catch(() => null)) as
+    | { test_id: string; total_questions: number }
+    | { error?: string }
+    | null;
 
-    const questionIds = await uploadQuestions(allQuestions, examMode, onProgress);
-
-    // Map question IDs back to their modules
-    let currentIndex = 0;
-    for (const moduleData of modules) {
-      const count = moduleData.questions.length;
-      moduleQuestionIds.push({
-        moduleNumber: moduleData.moduleNumber,
-        questionIds: questionIds.slice(currentIndex, currentIndex + count),
-      });
-      currentIndex += count;
-    }
-
-    // Step 2: Create test
-    const test: Test = {
-      title: testTitle,
-      description: testDescription,
-      is_full_test: modules.length === 4,
-      organization_id: organizationIds[0],
-    };
-
-    const testId = await createTest(test, examMode, onProgress);
-
-    // Step 2.5: Update test sections for math modules (3 and 4)
-    const moduleNumbers = modules.map((m) => m.moduleNumber);
-    await updateTestSections(moduleNumbers, examMode);
-
-    // Step 3: Create test_questions
-    const testQuestions: TestQuestion[] = [];
-    let orderCounter = 1;
-
-    for (const moduleData of moduleQuestionIds) {
-      const testSectionId = `TESTSECTION${moduleData.moduleNumber}`;
-
-      for (const questionId of moduleData.questionIds) {
-        testQuestions.push({
-          question_id: questionId,
-          test_section_id: testSectionId,
-          test_id: testId,
-          order_in_test: orderCounter++,
-        });
-      }
-    }
-
-    await uploadTestQuestions(testQuestions, examMode, onProgress);
-
-    onProgress?.({
-      stage: "complete",
-      current: testQuestions.length,
-      total: testQuestions.length,
-      message: "Upload complete!",
-    });
-
-    return {
-      test_id: testId,
-      total_questions: allQuestions.length,
-    };
-  } catch (error) {
-    console.error("Bulk upload error:", error);
-    throw error;
+  if (!response.ok || !payload || !("test_id" in payload)) {
+    throw new Error(
+      payload && "error" in payload && payload.error
+        ? payload.error
+        : "Upload failed. Please try again."
+    );
   }
+
+  onProgress?.({
+    stage: "complete",
+    current: payload.total_questions,
+    total: payload.total_questions,
+    message: "Upload complete!",
+  });
+
+  return payload;
 }
