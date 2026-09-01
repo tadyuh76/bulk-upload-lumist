@@ -120,7 +120,9 @@ export default function FigureUploader() {
   };
 
   const handleUpload = async () => {
-    const queuedFigures = figures.filter((figure) => figure.status === "ready");
+    const queuedFigures = figures.filter(
+      (figure) => figure.status === "ready" || figure.status === "failed"
+    );
     if (queuedFigures.length === 0) return;
 
     setIsUploading(true);
@@ -215,10 +217,20 @@ export default function FigureUploader() {
             <button
               type="button"
               onClick={handleUpload}
-              disabled={isUploading || figures.every((figure) => figure.status !== "ready")}
+              disabled={
+                isUploading ||
+                figures.every(
+                  (figure) =>
+                    figure.status !== "ready" && figure.status !== "failed"
+                )
+              }
               className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isUploading ? "Uploading figures..." : "Upload figures"}
+              {isUploading
+                ? "Uploading figures..."
+                : figures.some((figure) => figure.status === "ready")
+                ? "Upload figures"
+                : "Retry failed figures"}
             </button>
             <button
               type="button"
