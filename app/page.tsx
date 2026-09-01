@@ -26,6 +26,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import MarkdownRenderer from "@/app/components/MarkdownRenderer";
+import FigureUploader from "@/app/components/FigureUploader";
 
 const EXAM_MODES: { value: ExamMode; label: string }[] = [
   { value: "sat", label: "SAT" },
@@ -281,6 +282,10 @@ export default function Home() {
             Upload 1-4 Excel files for test modules, reorder them, preview, and
             upload to database
           </p>
+
+          <div className="mb-8">
+            <FigureUploader />
+          </div>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">

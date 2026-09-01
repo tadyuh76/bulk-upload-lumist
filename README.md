@@ -7,6 +7,7 @@ A Next.js application for bulk uploading Excel files containing test questions t
 - **Multiple File Upload**: Upload 1-4 Excel/CSV files for test modules
 - **Drag-and-Drop Reordering**: Easily reorder modules by dragging files
 - **Data Preview**: Review parsed questions before uploading
+- **Figure Upload**: Upload many question figures and download a CSV of permanent Supabase URLs and Markdown snippets
 - **Sequential Database Upload**: Automatically handles the upload sequence:
   1. Upload all questions → get question IDs
   2. Create test entry → get test ID
@@ -84,11 +85,12 @@ Your Excel/CSV files should have the following columns:
 
 ## Usage
 
-1. **Enter Test Details**: Provide a test title, optional description, organization ID, and question-bank default
-2. **Upload Files**: Select 1-4 Excel/CSV files
-3. **Reorder Modules**: Drag files to set their module order (1-4)
-4. **Preview Data**: Click "Preview Data" to review parsed questions
-5. **Upload**: Click "Upload to Database" to start the upload process
+1. **Upload Figures (optional)**: Select the image figures, upload them, then download the links CSV. Give that CSV and the question spreadsheet to Claude; Claude can place a returned Markdown image snippet in the relevant Question or Instruction cell.
+2. **Enter Test Details**: Provide a test title, optional description, organization ID, and question-bank default
+3. **Upload Files**: Select 1-4 Excel/CSV files
+4. **Reorder Modules**: Drag files to set their module order (1-4)
+5. **Preview Data**: Click "Preview Data" to review parsed questions
+6. **Upload**: Click "Upload to Database" to start the upload process
 
 ## Data Flow
 
@@ -107,6 +109,7 @@ Excel Files → Parse → Convert Format → Preview
 - Files are automatically parsed and validated
 - Correct answer is converted from letters (A-D) to indices (1-4)
 - `organization_id`, `in_question_bank`, `sub_skill`, and `image_description` are accepted as optional spreadsheet columns (spaces and case differences are supported)
+- Figure links are rendered from standard Markdown image syntax in the Question or Instruction column, such as `![Figure 1](https://supabase.lumist.ai/storage/v1/object/public/question-media/...)`
 - A spreadsheet `in_question_bank` value overrides the selected upload default for that question
 - Test sections (TESTSECTION1-4) must exist in your database
 - All uploads are transactional - if any step fails, no data is saved
