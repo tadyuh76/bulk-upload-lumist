@@ -55,14 +55,12 @@ type OrganizationLoadState = "idle" | "loading" | "ready" | "error";
 function SettingsSwitch({
   id,
   label,
-  description,
   checked,
   disabled,
   onChange,
 }: {
   id: string;
   label: string;
-  description: string;
   checked: boolean;
   disabled: boolean;
   onChange: (checked: boolean) => void;
@@ -74,13 +72,8 @@ function SettingsSwitch({
         disabled ? "cursor-not-allowed opacity-60" : ""
       }`}
     >
-      <span>
-        <span className="block text-sm font-semibold text-zinc-900">
-          {label}
-        </span>
-        <span className="mt-1 block text-xs leading-5 text-zinc-500">
-          {description}
-        </span>
+      <span className="block text-sm font-semibold text-zinc-900">
+        {label}
       </span>
       <input
         id={id}
@@ -92,7 +85,7 @@ function SettingsSwitch({
       />
       <span
         aria-hidden="true"
-        className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-zinc-200 transition after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5 peer-focus-visible:ring-4 peer-focus-visible:ring-blue-100 peer-disabled:opacity-60"
+        className="relative h-6 w-11 shrink-0 rounded-full bg-zinc-200 transition after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5 peer-focus-visible:ring-4 peer-focus-visible:ring-blue-100 peer-disabled:opacity-60"
       />
     </label>
   );
@@ -117,7 +110,7 @@ function SortableFileItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm"
+      className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3"
     >
       <div
         className="flex flex-1 items-center gap-4"
@@ -163,6 +156,7 @@ export default function Home() {
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
   const [organizationLoadState, setOrganizationLoadState] =
     useState<OrganizationLoadState>("idle");
+  const [organizationLoadRequest, setOrganizationLoadRequest] = useState(0);
   const [organizationError, setOrganizationError] = useState<string | null>(
     null
   );
@@ -186,7 +180,7 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (activeTab !== "questions" || organizationLoadState !== "idle") {
+    if (activeTab !== "questions") {
       return;
     }
 
@@ -197,7 +191,9 @@ export default function Home() {
       setOrganizationError(null);
 
       try {
-        const response = await fetch("/api/organizations");
+        const response = await fetch("/api/organizations", {
+          cache: "no-store",
+        });
         const payload = (await response.json()) as {
           organizations?: OrganizationOption[];
         };
@@ -223,7 +219,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, organizationLoadState]);
+  }, [activeTab, organizationLoadRequest]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files;
@@ -384,17 +380,14 @@ export default function Home() {
   return (
     <main className="min-h-[100dvh] bg-zinc-50 px-4 py-6 text-zinc-950 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8 max-w-2xl sm:mb-10">
+        <header className="mb-8 sm:mb-10">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
             Import workspace
           </h1>
-          <p className="mt-3 text-base leading-7 text-zinc-600">
-            Upload figures first, then use their links while preparing your question sheet.
-          </p>
         </header>
 
         <div
-          className="mb-6 grid w-full max-w-md grid-cols-2 rounded-xl border border-zinc-200 bg-white p-1 shadow-sm"
+          className="mb-6 grid w-full max-w-md grid-cols-2 rounded-xl border border-zinc-200 bg-white p-1"
           role="tablist"
           aria-label="Import task"
         >
@@ -408,7 +401,7 @@ export default function Home() {
             onKeyDown={handleTabKeyDown}
             className={`rounded-lg px-2.5 py-2.5 text-xs font-semibold leading-4 transition active:translate-y-px sm:px-5 sm:text-sm sm:leading-5 ${
               activeTab === "images"
-                ? "bg-blue-600 text-white shadow-sm"
+                ? "bg-blue-600 text-white"
                 : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
             }`}
           >
@@ -424,7 +417,7 @@ export default function Home() {
             onKeyDown={handleTabKeyDown}
             className={`rounded-lg px-2.5 py-2.5 text-xs font-semibold leading-4 transition active:translate-y-px sm:px-5 sm:text-sm sm:leading-5 ${
               activeTab === "questions"
-                ? "bg-blue-600 text-white shadow-sm"
+                ? "bg-blue-600 text-white"
                 : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
             }`}
           >
@@ -446,15 +439,12 @@ export default function Home() {
           role="tabpanel"
           aria-labelledby="questions-tab"
           hidden={activeTab !== "questions"}
-          className="mx-auto max-w-5xl rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
+          className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-8"
         >
           <div className="mb-8 border-b border-zinc-100 pb-6">
             <h2 className="text-xl font-semibold tracking-tight text-zinc-950">
               Bulk import questions
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Add up to four module files, review the parsed questions, then create the test.
-            </p>
           </div>
 
           {error && (
@@ -477,178 +467,170 @@ export default function Home() {
           )}
 
           <div className="space-y-7">
-            <div className="grid gap-7 border-b border-zinc-100 pb-7 lg:grid-cols-[minmax(0,1fr)_18rem]">
-              <div className="space-y-6">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-zinc-900">
-                    Upload mode *
-                  </label>
-                  <div
-                    className="inline-grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1"
-                    role="group"
-                    aria-label="Choose upload mode"
-                  >
-                    {EXAM_MODES.map((mode) => {
-                      const isSelected = examMode === mode.value;
+            <div className="space-y-5 border-b border-zinc-100 pb-7">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-900">
+                  Upload mode *
+                </label>
+                <div
+                  className="inline-grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1"
+                  role="group"
+                  aria-label="Choose upload mode"
+                >
+                  {EXAM_MODES.map((mode) => {
+                    const isSelected = examMode === mode.value;
 
-                      return (
-                        <button
-                          key={mode.value}
-                          type="button"
-                          onClick={() => handleExamModeChange(mode.value)}
-                          disabled={isUploading}
-                          aria-pressed={isSelected}
-                          className={`min-w-20 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-24 ${
-                            isSelected
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "text-zinc-600 hover:bg-white hover:text-zinc-950"
-                          }`}
-                        >
-                          {mode.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label
-                      htmlFor="test-title"
-                      className="mb-2 block text-sm font-semibold text-zinc-900"
-                    >
-                      Test title *
-                    </label>
-                    <input
-                      id="test-title"
-                      type="text"
-                      value={testTitle}
-                      onChange={(e) => setTestTitle(e.target.value)}
-                      placeholder="e.g., Practice test 1"
-                      className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                      disabled={isUploading}
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label
-                      htmlFor="test-description"
-                      className="mb-2 block text-sm font-semibold text-zinc-900"
-                    >
-                      Test description
-                    </label>
-                    <textarea
-                      id="test-description"
-                      value={testDescription}
-                      onChange={(e) => setTestDescription(e.target.value)}
-                      placeholder="Optional context for this test"
-                      rows={2}
-                      className="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                      disabled={isUploading}
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <div className="mb-2 flex items-baseline justify-between gap-3">
-                      <label
-                        htmlFor="organization-id"
-                        className="block text-sm font-semibold text-zinc-900"
+                    return (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        onClick={() => handleExamModeChange(mode.value)}
+                        disabled={isUploading}
+                        aria-pressed={isSelected}
+                        className={`min-w-20 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-24 ${
+                          isSelected
+                            ? "bg-blue-600 text-white"
+                            : "text-zinc-600 hover:bg-white hover:text-zinc-950"
+                        }`}
                       >
-                        Organization
-                      </label>
-                      {organizationLoadState === "loading" && (
-                        <span className="text-xs text-zinc-500">Loading...</span>
-                      )}
-                    </div>
-                    <select
-                      id="organization-id"
-                      value={organizationId}
-                      onChange={(event) => setOrganizationId(event.target.value)}
-                      disabled={
-                        isUploading || organizationLoadState === "loading"
-                      }
-                      className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
-                    >
-                      <option value="">No organization</option>
-                      {organizations.map((organization) => (
-                        <option key={organization.id} value={organization.id}>
-                          {organization.name} ({organization.id})
-                        </option>
-                      ))}
-                    </select>
-                    {organizationLoadState === "error" ? (
-                      <div className="mt-2 flex items-center gap-3">
-                        <p className="text-xs leading-5 text-red-700">
-                          {organizationError}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setOrganizationLoadState("idle")}
-                          className="text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-800"
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">
-                        Applied to the test and to questions without an
-                        organization_id value in the spreadsheet.
-                      </p>
-                    )}
-                  </div>
+                        {mode.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <aside className="self-start rounded-xl border border-zinc-200 bg-zinc-50 px-4">
-                <div className="border-b border-zinc-200 py-4">
-                  <h3 className="text-sm font-semibold text-zinc-900">
-                    Question defaults
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
-                    Spreadsheet values can override these per question.
-                  </p>
-                </div>
-                <div className="divide-y divide-zinc-200">
-                  <SettingsSwitch
-                    id="in-question-bank"
-                    label="Question bank"
-                    description="Make imported questions visible in the question bank."
-                    checked={inQuestionBank}
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="test-title"
+                    className="mb-2 block text-sm font-semibold text-zinc-900"
+                  >
+                    Test title *
+                  </label>
+                  <input
+                    id="test-title"
+                    type="text"
+                    value={testTitle}
+                    onChange={(e) => setTestTitle(e.target.value)}
+                    placeholder="e.g., Practice test 1"
+                    className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     disabled={isUploading}
-                    onChange={setInQuestionBank}
-                  />
-                  <SettingsSwitch
-                    id="is-premium"
-                    label="Premium"
-                    description="Mark imported questions as premium content."
-                    checked={isPremium}
-                    disabled={isUploading}
-                    onChange={setIsPremium}
                   />
                 </div>
-              </aside>
+
+                <div>
+                  <label
+                    htmlFor="test-description"
+                    className="mb-2 block text-sm font-semibold text-zinc-900"
+                  >
+                    Test description
+                  </label>
+                  <input
+                    id="test-description"
+                    type="text"
+                    value={testDescription}
+                    onChange={(e) => setTestDescription(e.target.value)}
+                    placeholder="Optional"
+                    className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    disabled={isUploading}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="organization-id"
+                  className="mb-2 block text-sm font-semibold text-zinc-900"
+                >
+                  Organization
+                </label>
+                <select
+                  id="organization-id"
+                  value={organizationId}
+                  onChange={(event) => setOrganizationId(event.target.value)}
+                  disabled={isUploading || organizationLoadState === "loading"}
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
+                >
+                  <option value="">
+                    {organizationLoadState === "loading"
+                      ? "Loading organizations..."
+                      : "No organization"}
+                  </option>
+                  {organizations.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name} ({organization.id})
+                    </option>
+                  ))}
+                </select>
+                {organizationLoadState === "error" && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <p className="text-xs text-red-700">{organizationError}</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOrganizationLoadRequest((request) => request + 1)
+                      }
+                      className="text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-800"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-4 border-t border-zinc-100 pt-5 sm:grid-cols-2">
+                <SettingsSwitch
+                  id="in-question-bank"
+                  label="Question bank"
+                  checked={inQuestionBank}
+                  disabled={isUploading}
+                  onChange={setInQuestionBank}
+                />
+                <SettingsSwitch
+                  id="is-premium"
+                  label="Premium"
+                  checked={isPremium}
+                  disabled={isUploading}
+                  onChange={setIsPremium}
+                />
+              </div>
             </div>
 
-            <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 sm:px-5">
-              <label className="mb-2 block text-sm font-semibold text-zinc-900">
+            <div className="flex flex-col gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-semibold text-zinc-900">
                 Module files
-              </label>
+              </span>
               <input
+                id="module-files"
                 type="file"
                 accept=".xlsx,.xls,.csv"
                 multiple
                 onChange={handleFileUpload}
                 disabled={isLoading || isUploading || files.length >= 4}
-                className="block w-full text-sm text-zinc-600 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-zinc-900 file:shadow-sm file:ring-1 file:ring-zinc-200 hover:file:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="sr-only"
               />
-              <p className="mt-3 text-xs leading-5 text-zinc-500">
-                Excel or CSV. Add up to four files, one for each module. {files.length}/4 selected.
-              </p>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-zinc-500" aria-live="polite">
+                  {files.length ? `${files.length}/4 selected` : "No files"}
+                </span>
+                <label
+                  htmlFor="module-files"
+                  aria-disabled={isLoading || isUploading || files.length >= 4}
+                  className={`inline-flex rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 transition active:translate-y-px ${
+                    isLoading || isUploading || files.length >= 4
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer hover:bg-zinc-100"
+                  }`}
+                >
+                  {isLoading ? "Reading files" : "Choose files"}
+                </label>
+              </div>
             </div>
 
             {isLoading && (
               <div className="rounded-xl bg-zinc-50 px-4 py-3">
-                <p className="text-sm font-medium text-zinc-700">Processing files...</p>
+                <p className="text-sm font-medium text-zinc-700">Reading files</p>
               </div>
             )}
 
@@ -657,9 +639,6 @@ export default function Home() {
                 <h2 className="mb-1 text-lg font-semibold text-zinc-950">
                   Module order
                 </h2>
-                <p className="mb-4 text-sm text-zinc-600">
-                  Drag files into the order they should appear in the test.
-                </p>
 
                 <DndContext
                   sensors={sensors}
@@ -812,7 +791,7 @@ export default function Home() {
 
             {selectedQuestion && (
               <div className="fixed inset-0 bg-black/20 bg-opacity-30 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                   <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-gray-900">
                       Question Details

@@ -167,15 +167,12 @@ export default function FigureUploader() {
   };
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8">
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-8">
       <div className="flex flex-col gap-5 border-b border-zinc-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">
             Bulk upload images
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
-            Upload your figures, then download a CSV with their permanent Supabase links and Markdown snippets.
-          </p>
         </div>
         {uploadedFigures.length > 0 && (
           <button
@@ -189,10 +186,8 @@ export default function FigureUploader() {
         )}
       </div>
 
-      <div className="mt-6 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 sm:px-5">
-        <label className="block text-sm font-semibold text-zinc-950" htmlFor="figure-images">
-          Select figure files
-        </label>
+      <div className="mt-6 flex flex-col gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-sm font-semibold text-zinc-950">Images</span>
         <input
           id="figure-images"
           type="file"
@@ -200,11 +195,24 @@ export default function FigureUploader() {
           multiple
           onChange={handleFilesSelected}
           disabled={isUploading}
-          className="mt-3 block w-full text-sm text-zinc-600 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-zinc-900 file:shadow-sm file:ring-1 file:ring-zinc-200 hover:file:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className="sr-only"
         />
-        <p className="mt-3 text-xs leading-5 text-zinc-500">
-          PNG, JPG, WEBP, GIF, or AVIF. Up to 20 MB per image. Use unique filenames so Claude can match them correctly.
-        </p>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-zinc-500" aria-live="polite">
+            {figures.length ? `${figures.length} selected` : "No images"}
+          </span>
+          <label
+            htmlFor="figure-images"
+            aria-disabled={isUploading}
+            className={`inline-flex rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 transition active:translate-y-px ${
+              isUploading
+                ? "cursor-not-allowed opacity-50"
+                : "cursor-pointer hover:bg-zinc-100"
+            }`}
+          >
+            Choose images
+          </label>
+        </div>
       </div>
 
       {error && (
@@ -279,11 +287,6 @@ export default function FigureUploader() {
         </>
       )}
 
-      {uploadedFigures.length > 0 && (
-        <p className="mt-5 text-xs leading-5 text-zinc-500">
-          The CSV includes the permanent URL and ready-to-paste Markdown. Ask Claude to place the Markdown in the relevant Question or Instruction cell.
-        </p>
-      )}
     </section>
   );
 }
