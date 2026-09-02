@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   uploadQuestionFigure,
   type UploadedQuestionFigure,
@@ -65,10 +65,9 @@ export default function FigureUploader() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const completedCount = useMemo(
-    () => figures.filter((figure) => figure.status === "uploaded").length,
-    [figures]
-  );
+  const completedCount = figures.filter(
+    (figure) => figure.status === "uploaded"
+  ).length;
 
   const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -168,15 +167,14 @@ export default function FigureUploader() {
   };
 
   return (
-    <section className="rounded-lg border border-blue-200 bg-blue-50 p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8">
+      <div className="flex flex-col gap-5 border-b border-zinc-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Upload figure images
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">
+            Bulk upload images
           </h2>
-          <p className="mt-1 text-sm text-gray-800">
-            Select every figure at once. Download the CSV when it finishes, then
-            give it to Claude with your question sheet.
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
+            Upload your figures, then download a CSV with their permanent Supabase links and Markdown snippets.
           </p>
         </div>
         {uploadedFigures.length > 0 && (
@@ -184,16 +182,16 @@ export default function FigureUploader() {
             type="button"
             onClick={() => downloadCsv(uploadedFigures)}
             disabled={isUploading}
-            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
           >
             Download links CSV
           </button>
         )}
       </div>
 
-      <div className="mt-4 rounded-lg border border-dashed border-blue-300 bg-white p-4">
-        <label className="block text-sm font-medium text-gray-900" htmlFor="figure-images">
-          Figure files
+      <div className="mt-6 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 sm:px-5">
+        <label className="block text-sm font-semibold text-zinc-950" htmlFor="figure-images">
+          Select figure files
         </label>
         <input
           id="figure-images"
@@ -202,18 +200,22 @@ export default function FigureUploader() {
           multiple
           onChange={handleFilesSelected}
           disabled={isUploading}
-          className="mt-2 block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-3 block w-full text-sm text-zinc-600 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-zinc-900 file:shadow-sm file:ring-1 file:ring-zinc-200 hover:file:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
         />
-        <p className="mt-2 text-xs text-gray-700">
-          PNG, JPG, WEBP, GIF, or AVIF. Up to 20 MB per image. Use unique filenames.
+        <p className="mt-3 text-xs leading-5 text-zinc-500">
+          PNG, JPG, WEBP, GIF, or AVIF. Up to 20 MB per image. Use unique filenames so Claude can match them correctly.
         </p>
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+          {error}
+        </p>
+      )}
 
       {figures.length > 0 && (
         <>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleUpload}
@@ -224,7 +226,7 @@ export default function FigureUploader() {
                     figure.status !== "ready" && figure.status !== "failed"
                 )
               }
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isUploading
                 ? "Uploading figures..."
@@ -236,24 +238,24 @@ export default function FigureUploader() {
               type="button"
               onClick={reset}
               disabled={isUploading}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Clear
             </button>
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-zinc-500">
               {completedCount} of {figures.length} uploaded
             </span>
           </div>
 
-          <ul className="mt-4 max-h-56 divide-y divide-blue-100 overflow-y-auto rounded-lg border border-blue-100 bg-white">
+          <ul className="mt-5 max-h-64 overflow-y-auto rounded-xl border border-zinc-200 bg-white">
             {figures.map((figure) => (
               <li
                 key={figure.id}
-                className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+                className="flex items-center justify-between gap-4 border-b border-zinc-100 px-4 py-3 last:border-b-0 text-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-gray-900">{figure.file.name}</p>
-                  <p className="text-xs text-gray-600">{formatFileSize(figure.file.size)}</p>
+                  <p className="truncate font-medium text-zinc-900">{figure.file.name}</p>
+                  <p className="text-xs text-zinc-500">{formatFileSize(figure.file.size)}</p>
                 </div>
                 <span
                   className={
@@ -261,7 +263,7 @@ export default function FigureUploader() {
                       ? "text-red-700"
                       : figure.status === "uploaded"
                       ? "text-green-700"
-                      : "text-gray-700"
+                      : "text-zinc-500"
                   }
                 >
                   {figure.error ||
@@ -278,9 +280,8 @@ export default function FigureUploader() {
       )}
 
       {uploadedFigures.length > 0 && (
-        <p className="mt-4 text-xs text-gray-700">
-          The CSV includes the permanent Supabase URL and a Markdown image snippet.
-          Claude can place that snippet in the Question or Instruction cell.
+        <p className="mt-5 text-xs leading-5 text-zinc-500">
+          The CSV includes the permanent URL and ready-to-paste Markdown. Ask Claude to place the Markdown in the relevant Question or Instruction cell.
         </p>
       )}
     </section>
