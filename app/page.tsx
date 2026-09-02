@@ -25,6 +25,8 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { CheckIcon, ChevronDownIcon } from "@radix-ui/react-icons";
+import * as Select from "@radix-ui/react-select";
 import MarkdownRenderer from "@/app/components/MarkdownRenderer";
 import FigureUploader from "@/app/components/FigureUploader";
 
@@ -51,6 +53,85 @@ interface OrganizationOption {
 }
 
 type OrganizationLoadState = "idle" | "loading" | "ready" | "error";
+const NO_ORGANIZATION_VALUE = "__no_organization__";
+
+function OrganizationDropdown({
+  id,
+  value,
+  organizations,
+  isLoading,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  organizations: OrganizationOption[];
+  isLoading: boolean;
+  disabled: boolean;
+  onChange: (organizationId: string) => void;
+}) {
+  const selectedOrganization = organizations.find(
+    (organization) => organization.id === value
+  );
+  const triggerLabel = isLoading
+    ? "Loading organizations..."
+    : selectedOrganization
+    ? `${selectedOrganization.name} (${selectedOrganization.id})`
+    : "No organization";
+
+  return (
+    <Select.Root
+      value={value || NO_ORGANIZATION_VALUE}
+      disabled={disabled || isLoading}
+      onValueChange={(nextValue) =>
+        onChange(nextValue === NO_ORGANIZATION_VALUE ? "" : nextValue)
+      }
+    >
+      <Select.Trigger
+        id={id}
+        className="flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-left text-zinc-950 outline-none transition data-[state=open]:border-blue-500 data-[state=open]:ring-4 data-[state=open]:ring-blue-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
+        aria-label="Organization"
+      >
+        <span className="truncate">{triggerLabel}</span>
+        <ChevronDownIcon className="ml-3 h-5 w-5 shrink-0 text-zinc-500" />
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content
+          position="popper"
+          sideOffset={6}
+          className="z-50 max-h-64 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-zinc-200 bg-white"
+        >
+          <Select.Viewport className="p-1">
+            <Select.Item
+              value={NO_ORGANIZATION_VALUE}
+              className="relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-sm text-zinc-700 outline-none data-[highlighted]:bg-zinc-100 data-[state=checked]:font-semibold data-[state=checked]:text-zinc-950"
+            >
+              <Select.ItemText>No organization</Select.ItemText>
+              <Select.ItemIndicator className="absolute right-3 inline-flex items-center text-blue-600">
+                <CheckIcon />
+              </Select.ItemIndicator>
+            </Select.Item>
+            {organizations.map((organization) => (
+              <Select.Item
+                key={organization.id}
+                value={organization.id}
+                className="relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-sm text-zinc-700 outline-none data-[highlighted]:bg-zinc-100 data-[state=checked]:font-semibold data-[state=checked]:text-zinc-950"
+              >
+                <Select.ItemText>
+                  {organization.name} ({organization.id})
+                </Select.ItemText>
+                <Select.ItemIndicator className="absolute right-3 inline-flex items-center text-blue-600">
+                  <CheckIcon />
+                </Select.ItemIndicator>
+              </Select.Item>
+            ))}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
 
 function SettingsSwitch({
   id,
@@ -545,24 +626,14 @@ export default function Home() {
                 >
                   Organization
                 </label>
-                <select
+                <OrganizationDropdown
                   id="organization-id"
                   value={organizationId}
-                  onChange={(event) => setOrganizationId(event.target.value)}
-                  disabled={isUploading || organizationLoadState === "loading"}
-                  className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
-                >
-                  <option value="">
-                    {organizationLoadState === "loading"
-                      ? "Loading organizations..."
-                      : "No organization"}
-                  </option>
-                  {organizations.map((organization) => (
-                    <option key={organization.id} value={organization.id}>
-                      {organization.name} ({organization.id})
-                    </option>
-                  ))}
-                </select>
+                  organizations={organizations}
+                  isLoading={organizationLoadState === "loading"}
+                  disabled={isUploading}
+                  onChange={setOrganizationId}
+                />
                 {organizationLoadState === "error" && (
                   <div className="mt-2 flex items-center gap-3">
                     <p className="text-xs text-red-700">{organizationError}</p>
