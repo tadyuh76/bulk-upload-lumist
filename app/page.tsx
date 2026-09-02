@@ -68,7 +68,7 @@ function SettingsSwitch({
   return (
     <label
       htmlFor={id}
-      className={`flex cursor-pointer items-start justify-between gap-4 py-4 first:pt-0 last:pb-0 ${
+      className={`inline-flex min-w-40 cursor-pointer items-center justify-between gap-4 py-3 ${
         disabled ? "cursor-not-allowed opacity-60" : ""
       }`}
     >
@@ -579,7 +579,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="grid gap-4 border-t border-zinc-100 pt-5 sm:grid-cols-2">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-zinc-100 pt-5">
                 <SettingsSwitch
                   id="in-question-bank"
                   label="Question bank"
