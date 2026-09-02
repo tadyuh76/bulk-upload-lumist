@@ -387,7 +387,7 @@ export default function Home() {
         </header>
 
         <div
-          className="mb-6 grid w-full max-w-md grid-cols-2 rounded-xl border border-zinc-200 bg-white p-1"
+          className="mb-6 grid w-full max-w-[30rem] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] rounded-xl border border-zinc-200 bg-white p-1"
           role="tablist"
           aria-label="Import task"
         >
@@ -399,7 +399,7 @@ export default function Home() {
             aria-selected={activeTab === "images"}
             onClick={() => setActiveTab("images")}
             onKeyDown={handleTabKeyDown}
-            className={`rounded-lg px-2.5 py-2.5 text-xs font-semibold leading-4 transition active:translate-y-px sm:px-5 sm:text-sm sm:leading-5 ${
+            className={`w-full whitespace-nowrap rounded-lg px-2.5 py-2.5 text-xs font-semibold leading-4 transition active:translate-y-px sm:px-5 sm:text-sm sm:leading-5 ${
               activeTab === "images"
                 ? "bg-blue-600 text-white"
                 : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
@@ -415,7 +415,7 @@ export default function Home() {
             aria-selected={activeTab === "questions"}
             onClick={() => setActiveTab("questions")}
             onKeyDown={handleTabKeyDown}
-            className={`rounded-lg px-2.5 py-2.5 text-xs font-semibold leading-4 transition active:translate-y-px sm:px-5 sm:text-sm sm:leading-5 ${
+            className={`w-full whitespace-nowrap rounded-lg px-2.5 py-2.5 text-xs font-semibold leading-4 transition active:translate-y-px sm:px-5 sm:text-sm sm:leading-5 ${
               activeTab === "questions"
                 ? "bg-blue-600 text-white"
                 : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
