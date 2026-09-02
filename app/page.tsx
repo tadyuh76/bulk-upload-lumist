@@ -446,7 +446,7 @@ export default function Home() {
           role="tabpanel"
           aria-labelledby="questions-tab"
           hidden={activeTab !== "questions"}
-          className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
+          className="mx-auto max-w-5xl rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
         >
           <div className="mb-8 border-b border-zinc-100 pb-6">
             <h2 className="text-xl font-semibold tracking-tight text-zinc-950">

@@ -40,8 +40,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Bulk upload failed", error);
+    const userFacingError =
+      error instanceof Error &&
+      error.message === "Question bank questions need a supported SAT tag."
+        ? error.message
+        : "Upload failed. No questions were added.";
+
     return NextResponse.json(
-      { error: "Upload failed. No questions were added." },
+      { error: userFacingError },
       { status: 500 }
     );
   }

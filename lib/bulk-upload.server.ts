@@ -22,6 +22,14 @@ function getDatabaseClient(examMode: ExamMode) {
   return examMode === "sat" ? client : client.schema(examMode);
 }
 
+function getQuestionSaveError(error: { message?: string } | null) {
+  if (error?.message?.includes("chk_questions_sat_question_bank_canonical_tag")) {
+    return "Question bank questions need a supported SAT tag.";
+  }
+
+  return "Unable to save questions";
+}
+
 async function removePartialUpload(
   examMode: ExamMode,
   testId: string | undefined,
@@ -82,7 +90,7 @@ export async function uploadBulkData(
         .single();
 
       if (error || !data?.question_id) {
-        throw new Error("Unable to save questions");
+        throw new Error(getQuestionSaveError(error));
       }
 
       questionIds.push(data.question_id);
