@@ -68,7 +68,7 @@ function SettingsSwitch({
   return (
     <label
       htmlFor={id}
-      className={`inline-flex min-w-40 cursor-pointer items-center justify-between gap-4 py-3 ${
+      className={`inline-flex cursor-pointer items-center gap-2 py-3 ${
         disabled ? "cursor-not-allowed opacity-60" : ""
       }`}
     >
@@ -579,10 +579,10 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-zinc-100 pt-5">
+              <div className="flex flex-wrap items-center gap-x-10 gap-y-1 border-t border-zinc-100 pt-5">
                 <SettingsSwitch
                   id="in-question-bank"
-                  label="Question bank"
+                  label="In Question Bank"
                   checked={inQuestionBank}
                   disabled={isUploading}
                   onChange={setInQuestionBank}
