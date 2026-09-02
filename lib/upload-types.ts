@@ -17,6 +17,7 @@ export interface Question {
   answer_choices: string[];
   correct_answer: string;
   in_question_bank?: boolean;
+  is_premium?: boolean;
 }
 
 export interface Test {
@@ -42,6 +43,7 @@ export interface TestQuestion {
 export interface UploadOptions {
   organizationId?: string;
   inQuestionBank: boolean;
+  isPremium: boolean;
 }
 
 export interface ModuleData {

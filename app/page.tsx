@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseExcelFile, convertParsedQuestions } from "@/lib/excel-parser";
 import {
   uploadBulkData,
@@ -43,6 +43,59 @@ interface FileWithModule {
   moduleNumber: number;
   questionCount: number;
   questions: Question[];
+}
+
+interface OrganizationOption {
+  id: string;
+  name: string;
+}
+
+type OrganizationLoadState = "idle" | "loading" | "ready" | "error";
+
+function SettingsSwitch({
+  id,
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className={`flex cursor-pointer items-start justify-between gap-4 py-4 first:pt-0 last:pb-0 ${
+        disabled ? "cursor-not-allowed opacity-60" : ""
+      }`}
+    >
+      <span>
+        <span className="block text-sm font-semibold text-zinc-900">
+          {label}
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-zinc-500">
+          {description}
+        </span>
+      </span>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden="true"
+        className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-zinc-200 transition after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5 peer-focus-visible:ring-4 peer-focus-visible:ring-blue-100 peer-disabled:opacity-60"
+      />
+    </label>
+  );
 }
 
 function SortableFileItem({
@@ -107,7 +160,14 @@ export default function Home() {
   const [testTitle, setTestTitle] = useState("");
   const [testDescription, setTestDescription] = useState("");
   const [organizationId, setOrganizationId] = useState("");
+  const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
+  const [organizationLoadState, setOrganizationLoadState] =
+    useState<OrganizationLoadState>("idle");
+  const [organizationError, setOrganizationError] = useState<string | null>(
+    null
+  );
   const [inQuestionBank, setInQuestionBank] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
     test_id: string;
@@ -124,6 +184,46 @@ export default function Home() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  useEffect(() => {
+    if (activeTab !== "questions" || organizationLoadState !== "idle") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadOrganizations = async () => {
+      setOrganizationLoadState("loading");
+      setOrganizationError(null);
+
+      try {
+        const response = await fetch("/api/organizations");
+        const payload = (await response.json()) as {
+          organizations?: OrganizationOption[];
+        };
+
+        if (!response.ok || !Array.isArray(payload.organizations)) {
+          throw new Error("Unable to load organizations.");
+        }
+
+        if (!cancelled) {
+          setOrganizations(payload.organizations);
+          setOrganizationLoadState("ready");
+        }
+      } catch {
+        if (!cancelled) {
+          setOrganizationError("Unable to load organizations.");
+          setOrganizationLoadState("error");
+        }
+      }
+    };
+
+    void loadOrganizations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, organizationLoadState]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files;
@@ -261,6 +361,7 @@ export default function Home() {
         {
           organizationId: organizationId.trim() || undefined,
           inQuestionBank,
+          isPremium,
         },
         (progress) => setUploadProgress(progress)
       );
@@ -271,6 +372,7 @@ export default function Home() {
       setTestDescription("");
       setOrganizationId("");
       setInQuestionBank(false);
+      setIsPremium(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -374,118 +476,157 @@ export default function Home() {
             </div>
           )}
 
-          <div className="space-y-8">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-zinc-900">
-                Upload Mode *
-              </label>
-              <div
-                className="inline-grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1"
-                role="group"
-                aria-label="Choose upload mode"
-              >
-                {EXAM_MODES.map((mode) => {
-                  const isSelected = examMode === mode.value;
+          <div className="space-y-7">
+            <div className="grid gap-7 border-b border-zinc-100 pb-7 lg:grid-cols-[minmax(0,1fr)_18rem]">
+              <div className="space-y-6">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-zinc-900">
+                    Upload mode *
+                  </label>
+                  <div
+                    className="inline-grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1"
+                    role="group"
+                    aria-label="Choose upload mode"
+                  >
+                    {EXAM_MODES.map((mode) => {
+                      const isSelected = examMode === mode.value;
 
-                  return (
-                    <button
-                      key={mode.value}
-                      type="button"
-                      onClick={() => handleExamModeChange(mode.value)}
-                      disabled={isUploading}
-                      aria-pressed={isSelected}
-                      className={`min-w-24 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 ${
-                        isSelected
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-zinc-600 hover:bg-white hover:text-zinc-950"
-                      }`}
+                      return (
+                        <button
+                          key={mode.value}
+                          type="button"
+                          onClick={() => handleExamModeChange(mode.value)}
+                          disabled={isUploading}
+                          aria-pressed={isSelected}
+                          className={`min-w-20 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-24 ${
+                            isSelected
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-zinc-600 hover:bg-white hover:text-zinc-950"
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="test-title"
+                      className="mb-2 block text-sm font-semibold text-zinc-900"
                     >
-                      {mode.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      Test title *
+                    </label>
+                    <input
+                      id="test-title"
+                      type="text"
+                      value={testTitle}
+                      onChange={(e) => setTestTitle(e.target.value)}
+                      placeholder="e.g., Practice test 1"
+                      className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      disabled={isUploading}
+                    />
+                  </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-zinc-900">
-                  Test title *
-                </label>
-                <input
-                  type="text"
-                  value={testTitle}
-                  onChange={(e) => setTestTitle(e.target.value)}
-                  placeholder="e.g., Exam 1"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  disabled={isUploading}
-                />
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="test-description"
+                      className="mb-2 block text-sm font-semibold text-zinc-900"
+                    >
+                      Test description
+                    </label>
+                    <textarea
+                      id="test-description"
+                      value={testDescription}
+                      onChange={(e) => setTestDescription(e.target.value)}
+                      placeholder="Optional context for this test"
+                      rows={2}
+                      className="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      disabled={isUploading}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="mb-2 flex items-baseline justify-between gap-3">
+                      <label
+                        htmlFor="organization-id"
+                        className="block text-sm font-semibold text-zinc-900"
+                      >
+                        Organization
+                      </label>
+                      {organizationLoadState === "loading" && (
+                        <span className="text-xs text-zinc-500">Loading...</span>
+                      )}
+                    </div>
+                    <select
+                      id="organization-id"
+                      value={organizationId}
+                      onChange={(event) => setOrganizationId(event.target.value)}
+                      disabled={
+                        isUploading || organizationLoadState === "loading"
+                      }
+                      className="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
+                    >
+                      <option value="">No organization</option>
+                      {organizations.map((organization) => (
+                        <option key={organization.id} value={organization.id}>
+                          {organization.name} ({organization.id})
+                        </option>
+                      ))}
+                    </select>
+                    {organizationLoadState === "error" ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        <p className="text-xs leading-5 text-red-700">
+                          {organizationError}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setOrganizationLoadState("idle")}
+                          className="text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-800"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs leading-5 text-zinc-500">
+                        Applied to the test and to questions without an
+                        organization_id value in the spreadsheet.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-zinc-900">
-                  Test description
-                </label>
-                <textarea
-                  value={testDescription}
-                  onChange={(e) => setTestDescription(e.target.value)}
-                  placeholder="Optional context for this test"
-                  rows={3}
-                  className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  disabled={isUploading}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-5 border-y border-zinc-100 py-6 md:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="organization-id"
-                  className="mb-2 block text-sm font-semibold text-zinc-900"
-                >
-                  Organization ID
-                </label>
-                <input
-                  id="organization-id"
-                  type="text"
-                  value={organizationId}
-                  onChange={(e) => setOrganizationId(e.target.value)}
-                  placeholder="e.g., ORGANIZATION1"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  disabled={isUploading}
-                />
-                <p className="mt-2 text-xs leading-5 text-zinc-500">
-                  Optional. Applied to the test and to questions without an
-                  organization_id column value.
-                </p>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="in-question-bank"
-                  className="mb-2 block text-sm font-semibold text-zinc-900"
-                >
-                  Question bank visibility
-                </label>
-                <select
-                  id="in-question-bank"
-                  value={String(inQuestionBank)}
-                  onChange={(e) =>
-                    setInQuestionBank(e.target.value === "true")
-                  }
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-zinc-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  disabled={isUploading}
-                >
-                  <option value="false">No - test-only questions</option>
-                  <option value="true">
-                    Yes - include in the question bank
-                  </option>
-                </select>
-                <p className="mt-2 text-xs leading-5 text-zinc-500">
-                  This is the default; an in_question_bank spreadsheet column
-                  can override it for individual questions.
-                </p>
-              </div>
+              <aside className="self-start rounded-xl border border-zinc-200 bg-zinc-50 px-4">
+                <div className="border-b border-zinc-200 py-4">
+                  <h3 className="text-sm font-semibold text-zinc-900">
+                    Question defaults
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    Spreadsheet values can override these per question.
+                  </p>
+                </div>
+                <div className="divide-y divide-zinc-200">
+                  <SettingsSwitch
+                    id="in-question-bank"
+                    label="Question bank"
+                    description="Make imported questions visible in the question bank."
+                    checked={inQuestionBank}
+                    disabled={isUploading}
+                    onChange={setInQuestionBank}
+                  />
+                  <SettingsSwitch
+                    id="is-premium"
+                    label="Premium"
+                    description="Mark imported questions as premium content."
+                    checked={isPremium}
+                    disabled={isUploading}
+                    onChange={setIsPremium}
+                  />
+                </div>
+              </aside>
             </div>
 
             <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 sm:px-5">
@@ -729,6 +870,19 @@ export default function Home() {
                         {selectedQuestion.in_question_bank === undefined
                           ? `Uses upload default (${inQuestionBank ? "yes" : "no"})`
                           : selectedQuestion.in_question_bank
+                          ? "Yes"
+                          : "No"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        Premium
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedQuestion.is_premium === undefined
+                          ? `Uses upload default (${isPremium ? "yes" : "no"})`
+                          : selectedQuestion.is_premium
                           ? "Yes"
                           : "No"}
                       </p>

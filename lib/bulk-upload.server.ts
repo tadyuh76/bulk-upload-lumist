@@ -51,6 +51,7 @@ export async function uploadBulkData(
       ...question,
       organization_id: question.organization_id ?? options.organizationId,
       in_question_bank: question.in_question_bank ?? options.inQuestionBank,
+      is_premium: question.is_premium ?? options.isPremium,
     }))
   );
 

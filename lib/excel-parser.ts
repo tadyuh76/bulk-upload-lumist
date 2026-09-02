@@ -5,6 +5,7 @@ export interface ParsedQuestion {
   reference_id: string;
   organization_id: string;
   in_question_bank?: boolean;
+  is_premium?: boolean;
   tag: string;
   sub_skill: string;
   difficulty: string;
@@ -112,7 +113,8 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
 
         const parseOptionalBoolean = (
           value: unknown,
-          questionId: string
+          questionId: string,
+          columnName: "in_question_bank" | "is_premium"
         ): boolean | undefined => {
           const normalized = String(value ?? "").trim().toLowerCase();
           if (!normalized) return undefined;
@@ -120,7 +122,7 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
           if (["false", "no", "0"].includes(normalized)) return false;
 
           throw new Error(
-            `Invalid in_question_bank value for "${questionId}". Use true or false.`
+            `Invalid ${columnName} value for "${questionId}". Use true or false.`
           );
         };
 
@@ -163,7 +165,16 @@ export async function parseExcelFile(file: File): Promise<ParsedQuestion[]> {
                 "in question bank",
                 "question bank",
               ]),
-              String(questionId).trim()
+              String(questionId).trim(),
+              "in_question_bank"
+            ),
+            is_premium: parseOptionalBoolean(
+              getValue(row, "is_premium", [
+                "is premium",
+                "premium",
+              ]),
+              String(questionId).trim(),
+              "is_premium"
             ),
             tag: String(
               getValue(row, "tag", [
@@ -399,6 +410,7 @@ export function convertToQuestion(parsed: ParsedQuestion): Question {
     reference_id: parsed.reference_id,
     organization_id: parsed.organization_id || undefined,
     in_question_bank: parsed.in_question_bank,
+    is_premium: parsed.is_premium,
     question_type: isNumeric ? "numeric" : "multiple_choice",
     question_text: parsed.question_text,
     instructions: parsed.instructions,
